@@ -1,80 +1,69 @@
-import json, os, g4f, random, smtplib, asyncio
-from datetime import datetime
-from email.message import EmailMessage
+import json, os, g4f, asyncio, random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
-# --- 🔱 SUPREME MASTER DIRECT CONFIG ---
-TELEGRAM_TOKEN = "8285517053:AAE-99tylt5Wh0r3qYbCOsdOJ-s9vBb2Gho" # Direct Token Fixed!
-OWNER_ID = 8536075730 # Aapki Numeric ID fix kar di
+# --- 🔱 CONFIG (ULTIMATE POWER) ---
+TELEGRAM_TOKEN = "8285517053:AAHbUrKM398ezjLovmpV9kSde05u7s-QQCc" #
+OWNER_ID = 8536075730 # Aapki Pehchan
 OWNER_USERNAME = "Asjad742"
-OWNER_EMAIL = "asjadr535@gmail.com"
-GMAIL_APP_PASSWORD = "pqwx lmhd zjts qhkn" # Gmail error fix!
-UPI_ID = "8887937470@ptaxis"
-DB_FILE = "supreme_master_db.json"
 
-# --- 📂 DATABASE ---
-def load_db():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, "r") as f: return json.load(f)
-        except: return {"users": {}, "custom_features": {}, "settings": {"mode": "Free"}}
-    return {"users": {}, "custom_features": {}, "settings": {"mode": "Free"}}
+# --- 🛠️ DYNAMIC SETTINGS ---
+DB = {"features": {}, "blocked_users": [], "stats": {"total_users": 0}}
 
-db = load_db()
+# --- 🛡️ ROLE SECURITY ---
+async def get_role(update: Update):
+    u_id = update.effective_user.id
+    if u_id == OWNER_ID: return "MASTER"
+    return "USER"
 
-def save_db():
-    with open(DB_FILE, "w") as f: json.dump(db, f, indent=4)
-
-# --- 🛡️ SMART SECURITY ---
-def is_boss(user):
-    return user.id == OWNER_ID or user.username == OWNER_USERNAME
-
-# --- 🚀 SUPERFAST HANDLERS ---
+# --- 🚀 START & MASTER MENU ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    role = await get_role(update)
     user = update.effective_user
-    uid = str(user.id)
 
-    if uid not in db["users"]:
-        db["users"][uid] = {"name": user.username, "joined": str(datetime.now())}
-        save_db()
-
-    if is_boss(user):
-        await update.message.reply_text(f"Salam King {OWNER_USERNAME}! 🔱\n\nAb bot 100x speed par chal raha hai. Koi error nahi bacha!", 
-                                       reply_markup=get_main_menu(user.id, True))
+    if role == "MASTER":
+        text = f"Pranam Mere Maalik King {OWNER_USERNAME}! 🔱\n\nPoora bot aapke kabze mein hai. Niche buttons se bot ki 'Marammat' aur 'Updates' manage karein."
+        kb = [
+            [InlineKeyboardButton("🛠️ Update Features", callback_data="mod_feat"), InlineKeyboardButton("📢 Broadcast", callback_data="bc")],
+            [InlineKeyboardButton("📊 Bot Stats", callback_data="stats"), InlineKeyboardButton("🛡️ Dev Control", callback_data="dev")]
+        ]
     else:
-        await update.message.reply_text(f"Salam! Main **Misbu Supreme** hoon. 🔱\n\nKaise ho boss?",
-                                       reply_markup=get_main_menu(user.id, False))
+        text = f"Salam! Main **Misbu Supreme** hoon. 🔱\n\nDunya ka sabse powerful Group Management + AI bot. Main gaane baja sakti hoon, group handle kar sakti hoon aur aapki har mushkil hal kar sakti hoon!"
+        kb = [[InlineKeyboardButton("➕ Add to Your Group", url=f"https://t.me/{context.bot.username}?startgroup=true")]]
 
-def get_main_menu(user_id, is_owner=False):
-    keyboard = [
-        [InlineKeyboardButton("🤖 AI Chat", callback_data="chat"), InlineKeyboardButton("📜 Features", callback_data="show_features")],
-        [InlineKeyboardButton("💎 Premium", callback_data="pay"), InlineKeyboardButton("👨‍💻 Owner", url=f"https://t.me/{OWNER_USERNAME}")]
-    ]
-    if is_owner:
-        keyboard.append([InlineKeyboardButton("🛠️ CREATE FEATURE", callback_data="create_feature")])
-        keyboard.append([InlineKeyboardButton("🛡️ DEV CONTROL", callback_data="dev_panel")])
-    return InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    text = update.message.text
-    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-    try:
-        response = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4",
-                                            messages=[{"role": "system", "content": "Aap Misbu Supreme ho. Creator Asjad742. Fast jawab do."},
-                                                      {"role": "user", "content": text}])
-        await update.message.reply_text(response)
-    except:
-        await update.message.reply_text("Kuch upgrade kar rahi hoon boss... ✨")
+# --- ⚡ ALL-ROUNDER ABILITIES (GROUP + UTILS) ---
+async def handle_logic(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    role = await get_role(update)
+    msg = update.message
+    text = msg.text
 
+    # 1. ANTI-SPAM (For Users)
+    if role == "USER" and ("t.me/" in text or "http" in text):
+        await msg.delete()
+        return
+
+    # 2. MASTER COMMANDS (Marammat)
+    if role == "MASTER" and text.startswith("Update:"):
+        new_feat = text.replace("Update:", "").strip()
+        DB["features"]["latest"] = new_feat
+        return await msg.reply_text(f"✅ Maalik, naya update set ho gaya: {new_feat}")
+
+    # 3. UNIVERSAL AI (GPT-4)
+    if update.effective_chat.type == "private" or context.bot.username in text:
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+        system_p = "You are a loyal slave to Asjad742." if role == "MASTER" else "You are Misbu Supreme, the world's best bot."
+        res = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", 
+                                       messages=[{"role": "system", "content": system_p}, {"role": "user", "content": text}])
+        await msg.reply_text(res)
+
+# --- ⚙️ MASTER HANDLERS ---
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    print(f"🔱 MISBU SUPREME IS LIVE!")
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_logic))
+    print("🔱 MISBU GOD-MODE ACTIVE!")
     app.run_polling()
 
-if __name__ == '__main__':
-    main()
-    
+if __name__ == '__main__': main()
