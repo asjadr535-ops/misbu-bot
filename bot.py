@@ -1,69 +1,65 @@
-import json, os, g4f, asyncio, random
+import json, os, g4f, asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
-# --- 🔱 CONFIG (ULTIMATE POWER) ---
-TELEGRAM_TOKEN = "8285517053:AAHbUrKM398ezjLovmpV9kSde05u7s-QQCc" #
-OWNER_ID = 8536075730 # Aapki Pehchan
+# --- 🔱 CONFIG (MASTER POWER) ---
+TELEGRAM_TOKEN = "8285517053:AAE-99tylt5Wh0r3qYbCOsdOJ-s9vBb2Gho" # Yahan apna token daal lena boss!
+OWNER_ID = 8536075730 # Aapki Numeric ID
 OWNER_USERNAME = "Asjad742"
+UPI_ID = "8887937470@ptaxis" # Aapka Khazana
 
-# --- 🛠️ DYNAMIC SETTINGS ---
-DB = {"features": {}, "blocked_users": [], "stats": {"total_users": 0}}
+# --- 💰 BUSINESS RATES ---
+PRICES = {"Daily": "₹49", "Weekly": "₹199", "Monthly": "₹599", "Lifetime King": "₹2499"}
+PREMIUM_USERS = set()
 
-# --- 🛡️ ROLE SECURITY ---
-async def get_role(update: Update):
-    u_id = update.effective_user.id
-    if u_id == OWNER_ID: return "MASTER"
-    return "USER"
-
-# --- 🚀 START & MASTER MENU ---
+# --- 🚀 MASTER START ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    role = await get_role(update)
-    user = update.effective_user
-
-    if role == "MASTER":
-        text = f"Pranam Mere Maalik King {OWNER_USERNAME}! 🔱\n\nPoora bot aapke kabze mein hai. Niche buttons se bot ki 'Marammat' aur 'Updates' manage karein."
-        kb = [
-            [InlineKeyboardButton("🛠️ Update Features", callback_data="mod_feat"), InlineKeyboardButton("📢 Broadcast", callback_data="bc")],
-            [InlineKeyboardButton("📊 Bot Stats", callback_data="stats"), InlineKeyboardButton("🛡️ Dev Control", callback_data="dev")]
-        ]
+    u_id = update.effective_user.id
+    if u_id == OWNER_ID:
+        text = f"Salam Mere Maalik King {OWNER_USERNAME}! 🔱✨\n\nAapki Misbu hazir hai. Sab kuch ekdum 'High-Fi' set kar diya hai. Hukum kijiye!"
+        kb = [[InlineKeyboardButton("🛠️ MARAMMAT", callback_data="update_bot"), InlineKeyboardButton("📢 ELAAN", callback_data="broadcast")],
+              [InlineKeyboardButton("💎 MANAGE VIP", callback_data="manage_vip")]]
     else:
-        text = f"Salam! Main **Misbu Supreme** hoon. 🔱\n\nDunya ka sabse powerful Group Management + AI bot. Main gaane baja sakti hoon, group handle kar sakti hoon aur aapki har mushkil hal kar sakti hoon!"
-        kb = [[InlineKeyboardButton("➕ Add to Your Group", url=f"https://t.me/{context.bot.username}?startgroup=true")]]
-
+        text = "Hii! Main **Misbu** hoon... ✨\n\nMain groups manage karne ke saath-saath bahut pyari baatein bhi karti hoon. Kya aap mere saath dosti karoge? ❤️"
+        kb = [[InlineKeyboardButton("➕ Add Me to Group", url=f"https://t.me/{context.bot.username}?startgroup=true")],
+              [InlineKeyboardButton("💎 Be My Premium Friend", callback_data="buy_premium")]]
     await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
 
-# --- ⚡ ALL-ROUNDER ABILITIES (GROUP + UTILS) ---
-async def handle_logic(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    role = await get_role(update)
-    msg = update.message
-    text = msg.text
+# --- 🤖 SWEET AI CHAT LOGIC ---
+async def handle_everything(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    u_id = update.effective_user.id
+    text = update.message.text
+    
+    if u_id == OWNER_ID and text.startswith("AddVIP:"):
+        try:
+            target_id = int(text.split(":")[1].strip())
+            PREMIUM_USERS.add(target_id)
+            return await update.message.reply_text(f"✅ Maalik, {target_id} ko Premium list mein daal diya!")
+        except: return await update.message.reply_text("❌ Format galat hai boss!")
 
-    # 1. ANTI-SPAM (For Users)
-    if role == "USER" and ("t.me/" in text or "http" in text):
-        await msg.delete()
-        return
-
-    # 2. MASTER COMMANDS (Marammat)
-    if role == "MASTER" and text.startswith("Update:"):
-        new_feat = text.replace("Update:", "").strip()
-        DB["features"]["latest"] = new_feat
-        return await msg.reply_text(f"✅ Maalik, naya update set ho gaya: {new_feat}")
-
-    # 3. UNIVERSAL AI (GPT-4)
     if update.effective_chat.type == "private" or context.bot.username in text:
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-        system_p = "You are a loyal slave to Asjad742." if role == "MASTER" else "You are Misbu Supreme, the world's best bot."
-        res = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", 
-                                       messages=[{"role": "system", "content": system_p}, {"role": "user", "content": text}])
-        await msg.reply_text(res)
+        
+        # Sweet Personality Settings
+        if u_id == OWNER_ID:
+            personality = f"You are a sweet girl and a loyal slave to {OWNER_USERNAME}. Be extremely respectful and loving to him. Call him Maalik or King."
+        else:
+            personality = "You are a beautiful, sweet girl named Misbu. Talk very nicely, use emojis like ✨, ❤️, 😊. Attract users with your sweet words so they want to buy premium. Be helpful but flirty."
 
-# --- ⚙️ MASTER HANDLERS ---
+        try:
+            res = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", 
+                                           messages=[{"role": "system", "content": personality}, 
+                                                     {"role": "user", "content": text}])
+            await update.message.reply_text(res)
+        except:
+            await update.message.reply_text("Abhi thoda busy hoon, baad mein baat karein? ✨")
+
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_logic))
-    print("🔱 MISBU GOD-MODE ACTIVE!")
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_everything))
+    print("🔱 MISBU SUPREME IS READY FOR HER KING!")
     app.run_polling()
 
 if __name__ == '__main__': main()
+    
