@@ -5,7 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
 # --- 🔱 SUPREME MASTER DIRECT CONFIG ---
-TELEGRAM_TOKEN = "8285517053:AAHbUrKM398ezjLovmpV9kSde05u7s-QQCc" # Direct Token Fixed!
+TELEGRAM_TOKEN = "8285517053:AAE-99tylt5Wh0r3qYbCOsdOJ-s9vBb2Gho" # Direct Token Fixed!
 OWNER_ID = 8536075730 # Aapki Numeric ID fix kar di
 OWNER_USERNAME = "Asjad742"
 OWNER_EMAIL = "asjadr535@gmail.com"
