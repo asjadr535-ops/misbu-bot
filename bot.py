@@ -4,12 +4,12 @@ from email.message import EmailMessage
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
-# --- 🔱 ROCKET SPEED CONFIG (CONNECTED TO RENDER) ---
-TELEGRAM_TOKEN = os.environ.get("BOT_TOKEN")  # Ab Render se naya token uthayega
-OWNER_ID = int(os.environ.get("OWNER_ID", "8536075730")) # Aapki numeric ID fix kar di
+# --- 🔱 SUPREME MASTER DIRECT CONFIG ---
+TELEGRAM_TOKEN = "8285517053:AAHbUrKM398ezjLovmpV9kSde05u7s-QQCc" # Direct Token Fixed!
+OWNER_ID = 8536075730 # Aapki Numeric ID fix kar di
 OWNER_USERNAME = "Asjad742"
-OWNER_EMAIL = os.environ.get("GMAIL_ID", "asjadr535@gmail.com")
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_PASSWORD") # Render wala naya password uthayega
+OWNER_EMAIL = "asjadr535@gmail.com"
+GMAIL_APP_PASSWORD = "pqwx lmhd zjts qhkn" # Gmail error fix!
 UPI_ID = "8887937470@ptaxis"
 DB_FILE = "supreme_master_db.json"
 
@@ -26,7 +26,7 @@ db = load_db()
 def save_db():
     with open(DB_FILE, "w") as f: json.dump(db, f, indent=4)
 
-# --- 🛡️ SMART SECURITY (NO OTP FOR BOSS) ---
+# --- 🛡️ SMART SECURITY ---
 def is_boss(user):
     return user.id == OWNER_ID or user.username == OWNER_USERNAME
 
@@ -39,12 +39,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db["users"][uid] = {"name": user.username, "joined": str(datetime.now())}
         save_db()
 
-    # Boss Identification
     if is_boss(user):
-        await update.message.reply_text(f"Salam King {OWNER_USERNAME}! 🔱\n\nMain zinda hoon aur ab Rocket se tez hoon! 🚀", 
+        await update.message.reply_text(f"Salam King {OWNER_USERNAME}! 🔱\n\nAb bot 100x speed par chal raha hai. Koi error nahi bacha!", 
                                        reply_markup=get_main_menu(user.id, True))
     else:
-        await update.message.reply_text(f"Salam! Main **Misbu Supreme** hoon. 🔱\n\nAb main pehle se 100x Fast hoon! 🚀",
+        await update.message.reply_text(f"Salam! Main **Misbu Supreme** hoon. 🔱\n\nKaise ho boss?",
                                        reply_markup=get_main_menu(user.id, False))
 
 def get_main_menu(user_id, is_owner=False):
@@ -60,25 +59,20 @@ def get_main_menu(user_id, is_owner=False):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     text = update.message.text
-
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     try:
-        # Fast AI Response using GPT-4
         response = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4",
-                                            messages=[{"role": "system", "content": "Aap Misbu Supreme ho. Creator Asjad742. Jawab turant do."},
+                                            messages=[{"role": "system", "content": "Aap Misbu Supreme ho. Creator Asjad742. Fast jawab do."},
                                                       {"role": "user", "content": text}])
         await update.message.reply_text(response)
     except:
         await update.message.reply_text("Kuch upgrade kar rahi hoon boss... ✨")
 
 def main():
-    if not TELEGRAM_TOKEN:
-        print("❌ Error: BOT_TOKEN nahi mila! Render settings check karein.")
-        return
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    print(f"🔱 MISBU SUPREME 100X SPEED IS LIVE!")
+    print(f"🔱 MISBU SUPREME IS LIVE!")
     app.run_polling()
 
 if __name__ == '__main__':
