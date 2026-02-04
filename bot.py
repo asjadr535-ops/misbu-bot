@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, constan
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
 # --- 🔱 OWNER CONFIG (Asjad742) ---
-TOKEN = "8285517053:AAFS8GAtxcWr0oe2hUpXaAL2uVGbRsEG9lo" 
+TOKEN = "8285517053:AAE3UQdQ96I9nCcY5Xx5j6C5LJMERbTlTwo" 
 OWNER_ID = 8536075730 
 OWNER_HANDLE = "@Asjad742"
 
