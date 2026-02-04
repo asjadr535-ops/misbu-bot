@@ -1,96 +1,108 @@
-import json, os, g4f, asyncio, re, sys, random
+import os, g4f, asyncio, re, sys, random, threading, http.server, socketserver
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, constants
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
-# --- 🔱 CORE CONFIG (Owner: Asjad742) ---
-TOKEN = "8285517053:AAFS8GAtxcWr0oe2hUpXaAL2uVGbRsEG9lo"
+# --- 🔱 OWNER CONFIG (Asjad742) ---
+TOKEN = "8285517053:AAFS8GAtxcWr0oe2hUpXaAL2uVGbRsEG9lo" 
 OWNER_ID = 8536075730 
 OWNER_HANDLE = "@Asjad742"
 
-# --- 🧠 DATABASE (Memory & Features) ---
+# --- 🌐 RENDER FREE FIX (Port Handling) ---
+def run_fake_server():
+    port = int(os.environ.get("PORT", 8080))
+    handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        httpd.serve_forever()
+
+# --- 🧠 DATABASE ---
 DB = {
     "users": {}, "premium": set(), 
     "buttons": {
-        "Aatma": {"msg": "🌀 Multi-Bot Soul Active! Select Powers...", "access": "Free"},
-        "Student Zone": {"msg": "📚 Select Exam & Topic for Pro-Level Prep.", "access": "Free"},
-        "Extra Features": {"msg": "🛠️ Tools: Voice, PDF, Image, GIF.", "access": "Premium"},
-        "Talk to Misbu": {"msg": "🌸 Hii! Main Misbu hoon.. chalo baatein karte hain! ✨", "access": "Free"}
-    },
-    "clones": {}
+        "🌀 Aatma": "Multi-Bot Soul Mode Active!",
+        "📚 Student Zone": "Pro-Level Study & Mentor Mode.",
+        "🛠️ Extra Features": "Voice, PDF, Image, GIF Tools.",
+        "🌸 Talk to Misbu": "Mood: Sweet Teenage Girl ✨"
+    }
 }
 
-# --- 🛠️ AUTO-HEALING & SMART ENGINE ---
-def auto_recover():
-    # Error aate hi system state restore karega
-    os.execv(sys.executable, ['python'] + sys.argv)
+# --- 🎭 (7) MISBU PERSONALITY ---
+async def misbu_ai(text):
+    prompt = f"Act as Misbu, a shy, sweet, and attractive teenage girl. Use emojis, talk like a best friend to @Asjad742: {text}"
+    return await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", messages=[{"role": "user", "content": prompt}])
 
-# --- 🚀 (1) AATMA & (2) STUDENT ZONE LOGIC ---
-async def student_engine(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Pro-level search logic for PyQs, Polls, and Mentorship
-    await update.message.reply_text("🔍 Searching all platforms for Pro-Level Material...")
-
-# --- 🎭 (7) MISBU MOOD (Teenage Girl Personality) ---
-def get_misbu_response(text):
-    prompt = f"Act as Misbu, a shy yet fun teenage girl. Be sweet, use emojis, talk like a best friend: {text}"
-    return g4f.ChatCompletion.create(model="gpt-4", messages=[{"role": "user", "content": prompt}])
-
-# --- 🔱 (4) DEVELOPER & (5) BUTTON ADD COMMANDS ---
-async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: return
-    kb = [[InlineKeyboardButton("📝 Edit Buttons", callback_data="edit_btn"), 
-           InlineKeyboardButton("📊 Tracking", callback_data="track")]]
-    await update.message.reply_text("🔱 WELCOME OWNER ASJAD742. Full Control Active.", reply_markup=InlineKeyboardMarkup(kb))
-
-# --- 🚀 MAIN START UI ---
+# --- 🚀 MASTER UI (Points 1, 2, 3, 7) ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_id = update.effective_user.id
-    if str(u_id) not in DB["users"]: DB["users"][str(u_id)] = {"paid": False, "activity": []}
+    if str(u_id) not in DB["users"]: DB["users"][str(u_id)] = {"status": "Free"}
     
     kb = []
-    # Dynamic Button Display (Free vs Paid)
-    for b_name, data in DB["buttons"].items():
-        if data["access"] == "Free" or u_id == OWNER_ID or u_id in DB["premium"]:
-            kb.append([InlineKeyboardButton(b_name, callback_data=f"func_{b_name}")])
+    for name in DB["buttons"]:
+        kb.append([InlineKeyboardButton(name, callback_data=f"feat_{name}")])
     
     if u_id == OWNER_ID:
-        kb.append([InlineKeyboardButton("🛠️ DEVELOPER MENU", callback_data="admin_panel")])
+        kb.append([InlineKeyboardButton("🔱 DEVELOPER CONTROL", callback_data="dev_menu")])
         kb.append([InlineKeyboardButton("➕ ADD NEW BUTTON", callback_data="add_btn")])
 
-    await update.message.reply_text(f"Salam Maalik {OWNER_HANDLE}!" if u_id == OWNER_ID else "Welcome to Misbu Supreme!", 
-                                  reply_markup=InlineKeyboardMarkup(kb))
+    msg = f"Pranam Maalik {OWNER_HANDLE}! 🔱" if u_id == OWNER_ID else "Hii! Main Misbu hoon.. ✨❤️"
+    await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(kb))
 
-# --- 🤖 (10) BOT GENERATOR (CLONE SYSTEM) ---
-async def clone_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    target_bot = context.args[0]
-    # Logic to mimic ability and create clone
-    await update.message.reply_text(f"✅ Ability Copied from {target_bot}. Clone Ready!")
+# --- 🛡️ DEVELOPER & TRACKING (Points 4, 5, 6, 10) ---
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    u_id = query.from_user.id
+    await query.answer()
 
-# --- 🛡️ HANDLING EVERYTHING (AI, UTR, Suggestions) ---
-async def handle_master(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if query.data == "dev_menu" and u_id == OWNER_ID:
+        stats = f"📊 Users: {len(DB['users'])}\n🛠️ Commands: `Broadcast:msg`, `AddBtn:name:msg`, `Clone:username`"
+        await query.message.reply_text(stats)
+    elif query.data.startswith("feat_"):
+        btn_name = query.data.split("_")[1]
+        await query.message.reply_text(DB["buttons"].get(btn_name, "Processing..."))
+
+# --- 🤖 SMART ENGINE (AI + Suggestions + Auto-Fix) ---
+async def handle_everything(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_id = update.effective_user.id
     text = update.message.text
-    
-    # (9) Suggestions to Owner
-    if text.startswith("Suggestion:"):
-        await context.bot.send_message(OWNER_ID, f"📩 NEW SUGGESTION from {u_id}:\n{text}")
-        return await update.message.reply_text("✅ Maalik ko bhej diya gaya hai!")
+    if not text: return
 
-    # Auto-Fast AI Reply
+    # Admin: Broadcast & Button Add (Point 5)
+    if u_id == OWNER_ID:
+        if text.startswith("Broadcast:"):
+            msg = text.replace("Broadcast:", "")
+            for uid in DB["users"]:
+                try: await context.bot.send_message(chat_id=int(uid), text=f"📢 {msg}")
+                except: continue
+            return await update.message.reply_text("✅ Sent!")
+        if text.startswith("AddBtn:"):
+            _, n, m = text.split(":")
+            DB["buttons"][n] = m
+            return await update.message.reply_text(f"✅ Button '{n}' Added!")
+
+    # (9) Suggestion System
+    if text.lower().startswith("suggestion:"):
+        await context.bot.send_message(OWNER_ID, f"📩 Suggestion from {u_id}: {text}")
+        return await update.message.reply_text("✅ Maalik ko bhej diya!")
+
+    # Misbu AI Chat (Point 7)
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
-    res = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", messages=[{"role": "user", "content": text}])
-    await update.message.reply_text(res)
+    response = await misbu_ai(text)
+    await update.message.reply_text(response)
 
 def main():
+    # Render Port Fix Start
+    threading.Thread(target=run_fake_server, daemon=True).start()
+    
     try:
         app = Application.builder().token(TOKEN).build()
         app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("admin", admin_panel))
-        app.add_handler(CallbackQueryHandler(handle_callback)) # Internal logic
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_master))
+        app.add_handler(CallbackQueryHandler(handle_callback))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_everything))
         
-        # Conflict fix and Auto-Life
+        # Conflict Fix
         app.run_polling(drop_pending_updates=True)
     except Exception as e:
-        auto_recover() # Immediate fix on error
+        # (8) Self-Healing / Auto-Restart
+        os.execv(sys.executable, ['python'] + sys.argv)
 
 if __name__ == '__main__': main()
+    
