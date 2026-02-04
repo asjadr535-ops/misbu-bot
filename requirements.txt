@@ -1,5 +1,2 @@
 python-telegram-bot[job-queue]
-g4f
 requests
-asyncio
-typing-extensions
