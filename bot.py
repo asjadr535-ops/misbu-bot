@@ -13,18 +13,30 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, constan
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
 # --- 🔱 OWNER CONFIG ---
+# Tip: Token ko hamesha Render Dashboard mein set karein, yahan nahi
 TOKEN = os.environ.get("TELEGRAM_TOKEN", "8285517053:AAE3UQdQ96I9nCcY5Xx5j6C5LJMERbTlTwo")
 OWNER_ID = 8536075730 
 OWNER_HANDLE = "@Asjad742"
 
-# --- 🌐 RENDER PORT FIX ---
+# --- 🌐 RENDER PORT & CRON-JOB FIX (For 100% Success) ---
 def run_fake_server():
     port = int(os.environ.get("PORT", 8080))
-    handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer(("", port), handler) as httpd:
-        httpd.serve_forever()
+    class MyHandler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            # Cron-job ko ye message milega toh wo SUCCESS dikhayega
+            self.wfile.write(b"Misbu is Alive and Superfast! 🚀")
 
-# --- 🧠 SUPREME DATABASE (Points 1-10) ---
+    try:
+        with socketserver.TCPServer(("", port), MyHandler) as httpd:
+            print(f"🔱 Server started on port {port}")
+            httpd.serve_forever()
+    except Exception as e:
+        print(f"⚠️ Server error: {e}")
+
+# --- 🧠 SUPREME DATABASE ---
 DB = {
     "users": {}, "premium": set(),
     "buttons": {
@@ -35,16 +47,17 @@ DB = {
     }
 }
 
-# --- 🎭 (7) MISBU PERSONALITY (Point 7) ---
+# --- 🎭 (7) MISBU PERSONALITY (Language Locked) ---
 async def misbu_ai(text, mode="normal"):
-    prompt = f"Act as Misbu, a shy, sweet, attractive teenage girl. Best friend of @Asjad742. Use emojis, be playful: {text}"
+    # Strict prompt added to stop Chinese behavior
+    prompt = f"System: Strict Rule - Talk ONLY in Hindi/English. Act as Misbu, a shy, sweet, attractive teenage girl. Best friend of {OWNER_HANDLE}. Input: {text}"
     if mode == "detail": prompt += " Give extremely detailed answers."
     try:
         import g4f
         return await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", messages=[{"role": "user", "content": prompt}])
-    except: return "🌸 Aww, thoda network issue hai.. par main hoon na! ✨"
+    except: return "🌸 Aww Maalik, thoda network issue hai.. par main hoon na! ✨"
 
-# --- 🚀 MASTER UI (Points 1, 2, 3, 4, 7, 10) ---
+# --- 🚀 MASTER UI ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_id = update.effective_user.id
     if str(u_id) not in DB["users"]: DB["users"][str(u_id)] = {"status": "Free"}
@@ -62,7 +75,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"Pranam Maalik {OWNER_HANDLE}! 🔱 Sabhi systems 100% zinda hain." if u_id == OWNER_ID else "Hii! Main Misbu hoon.. ✨❤️"
     await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(kb))
 
-# --- 🛡️ (4, 5, 6, 10) CONTROL & GENERATOR ---
+# --- 🛡️ HANDLERS ---
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     u_id = query.from_user.id
@@ -76,24 +89,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         btn = query.data.split("_")[1]
         await query.message.reply_text(DB["buttons"].get(btn, "Processing with 100% Speed..."))
 
-# --- 🤖 (5, 8, 9) AUTO-REPAIR ENGINE ---
 async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_id = update.effective_user.id
     text = update.message.text
     if not text: return
 
-    if text.lower().startswith("suggestion:"): # Point 9
+    if text.lower().startswith("suggestion:"):
         await context.bot.send_message(OWNER_ID, f"📩 Suggestion: {text}")
         return await update.message.reply_text("✅ Maalik ko bhej diya!")
 
-    if u_id == OWNER_ID and text.startswith("Broadcast:"): # Point 5
+    if u_id == OWNER_ID and text.startswith("Broadcast:"):
         msg = text.replace("Broadcast:", "")
         for uid in DB["users"]:
             try: await context.bot.send_message(chat_id=int(uid), text=f"📢 {msg}")
             except: continue
         return await update.message.reply_text("✅ Sent!")
 
-    # Speed & AI Personality (Point 8 & 7)
     mode = "detail" if "details" in text.lower() else "normal"
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
     res = await misbu_ai(text, mode)
@@ -106,9 +117,11 @@ def main():
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CallbackQueryHandler(handle_callback))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_msg))
-        app.run_polling(drop_pending_updates=True) # Conflict Fix
+        # drop_pending_updates=True ensures no lag or conflict
+        app.run_polling(drop_pending_updates=True, close_loop=False)
     except Exception as e:
-        os.execv(sys.executable, ['python'] + sys.argv) # Self-Improvement/Repair
+        # Self-repair: Restarts the bot on crash
+        time.sleep(5)
+        os.execv(sys.executable, ['python'] + sys.argv)
 
 if __name__ == '__main__': main()
-                               
