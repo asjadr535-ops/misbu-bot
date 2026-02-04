@@ -1,125 +1,99 @@
-import json, os, g4f, asyncio, requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+import json, os, g4f, asyncio, requests, random
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, constants
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
-# --- 🔱 CONFIG ---
-TELEGRAM_TOKEN = "DAAL_DO_APNA_TOKEN" #
+# --- 🔱 CONFIG (MASTER SETTINGS) ---
+TELEGRAM_TOKEN = "8285517053:AAE-99tylt5Wh0r3qYbCOsdOJ-s9vBb2Gho" #
 OWNER_ID = 8536075730 #
+OWNER_USERNAME = "Asjad742"
 UPI_ID = "8887937470@ptaxis" #
 PREMIUM_USERS = set()
 
-# --- 🚀 POWER FEATURES (NEWLY ADDED) ---
+# --- 📊 DAILY POLL LOGIC (Study Boost) ---
+async def send_daily_poll(context: ContextTypes.DEFAULT_TYPE):
+    chat_id = context.job.chat_id
+    questions = [
+        {"q": "India ki financial capital kaunsi hai?", "opt": ["Delhi", "Mumbai", "Chennai", "Kolkata"], "ans": 1},
+        {"q": "Python mein 'print' kya hai?", "opt": ["Variable", "Function", "Keyword", "Data Type"], "ans": 1},
+        {"q": "Sana Khan kis industry se judi thi?", "opt": ["Sports", "Bollywood", "Politics", "Music"], "ans": 1} # [Personalized]
+    ]
+    p = random.choice(questions)
+    await context.bot.send_poll(chat_id=chat_id, question=f"📚 Study Boost: {p['q']}", options=p['opt'], correct_option_id=p['ans'], type="quiz", is_anonymous=False)
 
-# 1. AI Deep Search & PDF Analysis (Conceptual)
-async def pdf_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not (update.effective_user.id == OWNER_ID or update.effective_user.id in PREMIUM_USERS):
-        return await update.message.reply_text("❌ PDF Analysis ek 'High-Fi' feature hai. Premium lene ke baad try karein! ✨")
-    await update.message.reply_text("PDF mil gaya! Kya search karna hai batao? (Actual PDF processing logic needed here)")
+# --- 🎨 IMAGE GENERATION ---
+async def generate_image(prompt):
+    try:
+        res = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", messages=[{"role": "user", "content": f"Generate image: {prompt}"}], image_generate=True)
+        return res
+    except: return None
 
-# 2. AI Face Swap / Photo Retouch (Conceptual)
-async def face_swap(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not (update.effective_user.id == OWNER_ID or update.effective_user.id in PREMIUM_USERS):
-        return await update.message.reply_text("❌ Face Swap ek 'Premium Art' feature hai. Pehle Premium ban jao! ❤️")
-    await update.message.reply_text("Photo bhejo, main face swap kar dungi! (Actual image processing logic needed here)")
-
-# 3. Premium Downloader (No Watermark)
-async def premium_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = update.message.text
-    if not (update.effective_user.id == OWNER_ID or update.effective_user.id in PREMIUM_USERS):
-        return await update.message.reply_text("❌ High-Quality downloads sirf 'Premium Friends' ke liye hain. ✨")
-    if any(site in url for site in ["instagram.com", "youtube.com", "tiktok.com"]):
-        await update.message.reply_text("📥 Fetching media in high-quality (No Watermark)...")
-
-# 4. Voice Cloning (Conceptual)
-async def voice_clone(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not (update.effective_user.id == OWNER_ID or update.effective_user.id in PREMIUM_USERS):
-        return await update.message.reply_text("❌ Awaaz clone karna ek 'Special Ability' hai. Premium user ban jao! 😊")
-    await update.message.reply_text("Kis celebrity ki awaaz chahiye? Batao! (Actual voice cloning logic needed here)")
-
-# 5. Content Filtering (NSFW) - Group Specific
-async def nsfw_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type in ["group", "supergroup"]:
-        # Conceptual: If message is NSFW, delete it.
-        # This requires actual NSFW detection API/model.
-        if "bad word" in update.message.text.lower() or "nsfw_image_detected" in update.message.caption.lower():
-            if not (update.effective_user.id == OWNER_ID or update.effective_user.id in PREMIUM_USERS):
-                await update.message.delete()
-                await context.bot.send_message(update.effective_chat.id, "🚫 Ashleel content allowed nahi hai! ✨")
-
-# --- Existing Features (Re-integrated) ---
-
-# 6. Text to Voice (TTS)
-async def tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not (update.effective_user.id == OWNER_ID or update.effective_user.id in PREMIUM_USERS):
-        return await update.message.reply_text("❌ Meri awaaz sunne ke liye Premium chahiye! 🥺")
-    text = " ".join(context.args)
-    if not text: return
-    url = f"https://translate.google.com/translate_tts?ie=UTF-8&tl=hi&client=tw-ob&q={text.replace(' ', '+')}"
-    await update.message.reply_voice(voice=url, caption="✨")
-
-# 7. Voice to Text (Transcriber)
-async def voice_to_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not (update.effective_user.id == OWNER_ID or update.effective_user.id in PREMIUM_USERS):
-        return await update.message.reply_text("❌ Aapki awaaz sunne ke liye bhi Premium chahiye! 😜")
-    if not update.message.voice: return
-    await update.message.reply_text("Voice received. Processing... ✨")
-
-# --- 🛡️ ACCESS CONTROL & CHAT ---
+# --- 🚀 COMMAND HANDLERS ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_id = update.effective_user.id
     if u_id == OWNER_ID:
-        await update.message.reply_text(f"Pranam Maalik! Saare naye features add ho gaye hain. Ab bas paisa kamao! 💰", 
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📢 BROADCAST", callback_data="bc")]]))
+        text = f"Pranam Mere Maalik King {OWNER_USERNAME}! 🔱✨\n\nAb Misbu ke paas 'Student', 'Aatma', 'Draw' aur 'Polls' jaise saare weapon hain!"
+        kb = [[InlineKeyboardButton("🛠️ MARAMMAT", callback_data="mod"), InlineKeyboardButton("📢 ELAAN", callback_data="bc")],
+              [InlineKeyboardButton("👻 AATMA MODE", callback_data="aatma_mode"), InlineKeyboardButton("🎓 STUDENT ZONE", callback_data="student_zone")]]
+    elif u_id in PREMIUM_USERS:
+        text = "Salam Premium User! ✨\n\nAapke liye 'Student' aur 'Aatma' zone open hai. Enjoy kijiye!"
+        kb = [[InlineKeyboardButton("👻 AATMA MODE", callback_data="aatma_mode"), InlineKeyboardButton("🎓 STUDENT ZONE", callback_data="student_zone")]]
     else:
-        await update.message.reply_text("Hii! Main Misbu hoon.. ✨ Sabse best features chahiye toh Premium lo na baby! ❤️",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("💎 Be My Premium Friend", callback_data="buy_premium")]]))
+        text = "Hii! Main **Misbu** hoon... ✨❤️\n\nMain aapki study aur group dono sambhaal lungi. Sabse best features ke liye Premium lijiye!"
+        kb = [[InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{context.bot.username}?startgroup=true")],
+              [InlineKeyboardButton("💎 Buy Premium", callback_data="buy_premium")]]
+    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
 
+async def draw(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    u_id = update.effective_user.id
+    if not (u_id == OWNER_ID or u_id in PREMIUM_USERS):
+        return await update.message.reply_text(f"Ouch! 🥺 Ye feature Premium walo ke liye hai. UPI: `{UPI_ID}`")
+    prompt = " ".join(context.args)
+    if not prompt: return await update.message.reply_text("Kya draw karun baby? ✨")
+    msg = await update.message.reply_text("Kuch special bana rahi hoon... 🎨")
+    img = await generate_image(prompt)
+    if img: await update.message.reply_photo(img, caption="Ye lijiye aapka tohfa! ❤️")
+
+# --- 🛡️ CALLBACK HANDLERS ---
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    data = query.data
     await query.answer()
-    if data == "buy_premium":
-        msg = f"🔱 **PREMIUM SUBSCRIPTION** 🔱\n\n🔹 Daily: ₹49\n🔹 Weekly: ₹199\n🔹 Monthly: ₹599\n🔹 Lifetime King: ₹2499\n\n💳 **Payment UPI:** `{UPI_ID}`\n\nScreenshot lekar @Asjad742 ko bhejein!"
-        await query.message.reply_text(msg, parse_mode='Markdown')
+    if query.data == "buy_premium":
+        msg = f"🔱 **PREMIUM ACCESS** 🔱\n\n✅ Unlock Student Zone\n✅ Unlock Aatma Mode\n\n💳 UPI: `{UPI_ID}`\nBhejo aur @{OWNER_USERNAME} ko DM karo! ✨"
+        await query.message.reply_text(msg)
+    elif query.data == "aatma_mode":
+        await query.message.reply_text("👻 **AATMA MODE ACTIVE**\nDuniya ke har bot ki shakti ab mujhme hai! ✨")
+    elif query.data == "student_zone":
+        await query.message.reply_text("🎓 **STUDENT ZONE**\nApne exam ka naam likho, main material dhundh laungi! 📚")
 
-async def handle_everything_else(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# --- 🤖 POWER LOGIC ---
+async def handle_everything(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u_id = update.effective_user.id
     text = update.message.text
-    
-    if u_id == OWNER_ID and text and text.startswith("AddVIP:"):
-        try:
-            target_id = int(text.split(":")[1].strip())
-            PREMIUM_USERS.add(target_id)
-            return await update.message.reply_text(f"✅ VIP Added: {target_id}")
-        except: return await update.message.reply_text("❌ Format galat hai boss!")
+    if not text: return
 
-    # Sweet Girl AI Chat
-    if update.effective_chat.type == "private" or (text and context.bot.username in text):
-        pers = f"Sweet girl, slave to {OWNER_ID}" if u_id == OWNER_ID else "Sweet beautiful girl Misbu. Use emojis. Attract users to buy premium. Be helpful but flirty."
-        try:
-            res = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", 
-                                           messages=[{"role": "system", "content": pers}, {"role": "user", "content": text}])
-            await update.message.reply_text(res)
-        except:
-            await update.message.reply_text("Abhi thoda busy hoon, baad mein baat karein? ✨")
+    if u_id == OWNER_ID and text.startswith("AddVIP:"):
+        PREMIUM_USERS.add(int(text.split(":")[1].strip()))
+        return await update.message.reply_text("✅ VIP Added!")
     
-    # NSFW filter on all messages in groups
-    await nsfw_filter(update, context)
+    if update.effective_chat.type == "private" or context.bot.username in text:
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
+        
+        if u_id == OWNER_ID or u_id in PREMIUM_USERS:
+            system_p = "You are Misbu Supreme. Provide study notes, exam tips, lecture links, and bot abilities perfectly."
+        else:
+            system_p = "You are a sweet flirty girl Misbu. Use emojis. If study/high-fi tools are asked, ask for premium."
 
+        res = await asyncio.to_thread(g4f.ChatCompletion.create, model="gpt-4", messages=[{"role": "system", "content": system_p}, {"role": "user", "content": text}])
+        await update.message.reply_text(res)
 
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("pdf", pdf_search)) # New
-    app.add_handler(CommandHandler("faceswap", face_swap)) # New
-    app.add_handler(CommandHandler("clonevoice", voice_clone)) # New
-    app.add_handler(CommandHandler("speak", tts))
-    app.add_handler(MessageHandler(filters.VOICE, voice_to_text))
-    # Downloader triggered by URL in message
-    app.add_handler(MessageHandler(filters.TEXT & (filters.Entity("url") | filters.Entity("text_link")), premium_downloader))
+    app.add_handler(CommandHandler("draw", draw))
+    app.add_handler(CommandHandler("boost", lambda u, c: c.job_queue.run_repeating(send_daily_poll, interval=86400, first=10, chat_id=u.effective_chat.id)))
     app.add_handler(CallbackQueryHandler(handle_callback))
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_everything_else)) # Handles AI chat, NSFW, etc.
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_everything))
     app.run_polling()
 
 if __name__ == '__main__': main()
-        
+    
